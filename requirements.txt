@@ -1,8 +1,15 @@
 streamlit
-opencv
+opencv-python
 pandas
 xlsxwriter
 numpy
 boto3
 keras
 tensorflow
+streamlit-pandas-profiling
+ydata-profiling
+sklearn
+matplotlib
+streamlit_card
+pickle
+plotly
