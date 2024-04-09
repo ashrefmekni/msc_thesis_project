@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 
 from Utilities.aws_interactions import upload_files, download_files
 from Utilities.ann_functions import prepare_dataset, setup_folder_categories, load_df_from_excel
@@ -47,7 +48,7 @@ if choice == "Upload":
     if st.button("Upload"):
         if pictures:
             if upload_path:
-                upload_files("C:/Users/chref/Desktop/Tasks/gallerie/Spotify", upload_path, pictures, extension)
+                upload_files(os.getcwd(), upload_path, pictures, extension)
             else:
                 st.warning('The Upload Path is not set yet', icon="⚠️")
         else:
