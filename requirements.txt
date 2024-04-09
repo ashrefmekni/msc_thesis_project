@@ -1,0 +1,8 @@
+streamlit
+opencv
+pandas
+xlsxwriter
+numpy
+boto3
+keras
+tensorflow
