@@ -8,21 +8,32 @@ def verify_filetype(file, extension):
         return True
     else:
         return False
+    
+def create_temp_dir():
+    if not os.path.exists("temp"):
+        os.makedirs("temp")
+
+def create_temp_file(uploaded_file):
+    create_temp_dir()
+    temp_location = os.path.join("temp", uploaded_file.name)
+    with open(os.path.join("temp", uploaded_file.name), "wb") as f:
+        f.write(uploaded_file.getvalue())
+    print("Temp File created successfully")
+    return temp_location
 
 def upload_files(source_path, target_path, all_files, extension):
     s3 = boto3.client('s3')
     BUCKET = "project-thesis"
 
-    for root,dirs,files in os.walk(source_path):
-        for file in all_files:
-            if os.path.exists(os.path.join(root,file.name)):
-                if verify_filetype(file.name, extension) == False:
-                    st.write("You cannot Upload this type of file to this folder: " + target_path)
-                else:                
-                    target_file = target_path + file.name
-                    s3.upload_file(os.path.join(root, file.name), BUCKET, target_file)
-                    st.write(file.name + " successfully uploaded to your s3 bucket")
-
+    for file in all_files:
+        print(file)
+        if verify_filetype(file.name, extension) == False:
+            st.write("You cannot Upload this type of file to this folder: " + target_path)
+        else:
+            temp_location = create_temp_file(file)            
+            target_file = target_path + file.name
+            s3.upload_file(temp_location, BUCKET, target_file)
+            st.success(file.name + " successfully uploaded to your s3 bucket")
 
 def assert_dir_exists(path):
     """

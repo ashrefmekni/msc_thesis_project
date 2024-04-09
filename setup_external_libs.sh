@@ -1,16 +1,29 @@
+#!/bin/bash
+set -x
+
 chmod 755 setup_external_libs.sh
 chmod 755 requirements.txt
 sudo apt update
 sudo apt-get update 
-#sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev wget libbz2-dev
-#wget https://www.python.org/ftp/python/3.9.1/Python-3.9.1.tgz
-#tar -xf Python-3.9.1.tgz
-#cd Python-3.9.1
-#./configure --enable-optimizations
-#make -j 12
-#sudo make altinstall
-#python3.9 --version
+
+### Install necessary packages
 sudo apt install python3-pip
 sudo apt install graphviz
 sudo apt-get install ffmpeg libsm6 libxext6  -y
 pip install -r requirements.txt
+echo "All requirements are installed."
+
+###setup AWS configuration
+aws_dir="$HOME/.aws"
+credentials_file="$aws_dir/credentials"
+
+mkdir -p "$aws_dir"
+
+# Create credentials file
+cat <<EOF > "$credentials_file"
+[default]
+aws_access_key_id = AKIAQTQZJDYY6QM5KDQZ
+aws_secret_access_key = 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
+EOF
+
+echo "AWS credentials file was created successfully in $aws_dir directory."
