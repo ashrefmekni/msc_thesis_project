@@ -48,7 +48,6 @@ if choice == "Upload":
     if st.button("Upload"):
         if pictures:
             if upload_path:
-                print(os.get)
                 upload_files(os.getcwd(), upload_path, pictures, extension)
             else:
                 st.warning('The Upload Path is not set yet', icon="⚠️")
