@@ -12,3 +12,4 @@ scikit-learn
 matplotlib
 streamlit_card
 plotly
+pydot
