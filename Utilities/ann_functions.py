@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 
+from PIL import Image
 import streamlit as st
 import pandas as pd
 
@@ -38,25 +39,23 @@ def merge_excels():
             df=pd.concat([df,dfs])
     df.to_csv('merged_dataset.csv')
 
-def setup_folder_categories():
+def setup_folder_categories(all_categories):
     folder_names = dict()
-    folder_names["5,7 rpm"] = 1
-    folder_names["5,7 rpm vissza"] = 2
-    folder_names["6,1 rpm"] = 3
-    folder_names["6,1 rpm vissza"] = 4
-    folder_names["6,5 rpm"] = 5
+    label = 1
+    for category in all_categories:
+        folder_names[category] = label
+        label = label + 1
     return folder_names
 
-def prepare_dataset(folder_names):
-    folder_dir = os.getcwd() + '/RotationCNN' + '/Training'
-
-    for folder_name in os.listdir(folder_dir):
-        st.write('aaaaaa')
+def prepare_dataset(folder_names, category_images_dict):
+    for folder_name, images in category_images_dict.items():
         rows = []
-        images_dir = folder_dir + '/' + folder_name
-        for image in os.listdir(images_dir):
-            if (image.endswith(".jpg")):
-                img = cv2.imread(images_dir + "/" + image)
+        for image in images:
+            if (image.name.endswith(".jpg")):
+                # Convert the uploaded file to a PIL Image object
+                img = Image.open(image)
+                img = np.array(img)
+                #img = cv2.imread(pil_image)
                 #cv2.imshow('Original', img)
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 thr, gray1 = cv2.threshold(gray, 80 ,140, cv2.THRESH_BINARY)
@@ -129,10 +128,8 @@ def prepare_dataset(folder_names):
                     rgb_avg2= sum(rgb_line2) / len(rgb_line2)
                     rgb_avg3= sum(rgb_line3) / len(rgb_line3)
                     #print(rvg_avg)
-                    rows.append([folder_names[folder_name],image, average_area, largest_area, smallest_area, average_perimeter, largest_perim, smallest_perim, rgb_avg1, rgb_avg2, rgb_avg3])
+                    rows.append([folder_names[folder_name],image.name, average_area, largest_area, smallest_area, average_perimeter, largest_perim, smallest_perim, rgb_avg1, rgb_avg2, rgb_avg3])
 
-                
-        
         create_excel(rows, folder_name)
     merge_excels()
     # Excel file part

@@ -15,7 +15,7 @@ with st.sidebar:
 
 if choice == "Upload":
     st.title("Upload Your Images")
-    pictures = st.file_uploader("Please upload your images", accept_multiple_files = True)
+    files = st.file_uploader("Please upload your images", accept_multiple_files = True)
 
     upload_path = None
     upload_type = st.selectbox(
@@ -46,9 +46,9 @@ if choice == "Upload":
     st.write('The Bucket Folder Path: ', upload_path)
     
     if st.button("Upload"):
-        if pictures:
+        if files:
             if upload_path:
-                upload_files(os.getcwd(), upload_path, pictures, extension)
+                upload_files(os.getcwd(), upload_path, files, extension)
             else:
                 st.warning('The Upload Path is not set yet', icon="⚠️")
         else:
@@ -74,13 +74,40 @@ if choice == "Download":
             st.warning('Select The Folder First', icon="⚠️")
 
 if choice == "Create Dataset":
+    all_categories = []
+    category_images_dict = dict()
     st.header("Create Dataset")
-    folder_names = setup_folder_categories()
-    st.write(folder_names)
+    selected_category = st.selectbox(
+        'Which categories you would like to use?',
+        ('5.7 rpm', '6.1 rpm', '6.5 rpm', 'all the above'),
+        index=None,
+        placeholder="Select the categories..."
+    )
+    if selected_category == 'all the above':
+        all_categories = ['5.7 rpm', '6.1 rpm', '6.5 rpm']
+    elif selected_category != None:
+        all_categories.append(selected_category)
+    
+    st.write("if you wish to add extra categories, write down the rpm value in this float format x.y rpm")
+    new_category = st.text_input('New Category', '0.0 rpm')
+    if st.button("add"):
+        all_categories.append(str(new_category))
+    
+    folder_names = setup_folder_categories(all_categories)
+    if len(all_categories) > 0:
+        st.write("upload the images belonging to each category:")
+        for category in all_categories:
+            categ_label = all_categories.index(category)
+            st.write(category + " →	" + str(categ_label + 1))
+            files = st.file_uploader("Please upload your images", key = categ_label, accept_multiple_files = True, type=['png', 'jpg', 'jpeg'])
+            category_images_dict[category] = files
+
     if st.button("Start"):
         with st.spinner("Dataset generation On Going"):
-            prepare_dataset(folder_names)
+            prepare_dataset(folder_names, category_images_dict)
             st.session_state.dataset_ready = True
+    
     if st.session_state.dataset_ready == True:
         df = load_df_from_excel()
         st.dataframe(df)
+        st.balloons()
