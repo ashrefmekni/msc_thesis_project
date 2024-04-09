@@ -68,8 +68,9 @@ if choice == "Download":
     if st.button("Download"):
         if folder_type != None:
             folder_path = folder_type + "/"
-            st.write('The Bucket Folder Path: ', folder_path)
+            st.write('The Bucket Folder Path is: ', folder_path)
             download_files(folder_path)
+            st.success("Your download has completed successfully 😊")
         else:
             st.warning('Select The Folder First', icon="⚠️")
 
