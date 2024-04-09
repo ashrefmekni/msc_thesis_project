@@ -13,3 +13,4 @@ matplotlib
 streamlit_card
 plotly
 pydot
+openpyxl
