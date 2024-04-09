@@ -8,7 +8,7 @@ keras
 tensorflow
 streamlit-pandas-profiling
 ydata-profiling
-sklearn
+scikit-learn
 matplotlib
 streamlit_card
 pickle
