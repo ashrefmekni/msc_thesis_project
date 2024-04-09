@@ -4,12 +4,8 @@ import numpy as np
 
 import streamlit as st
 import pandas as pd
-#detection : import the necessary packages
-from scipy.spatial import distance as dist
-from collections import OrderedDict
+
 import xlsxwriter
-import argparse
-import imutils
 
 def create_excel(rows, folder_name):
     columns = ["Folder","Image Name", "Average area of granules", "Size of largest area", "Size of smallest area", "Average perimeter of granules", "Size of largest perimeter", "Size of smallest perimeter", "Average Red of Granules", "Average Green of Granules", "Average Blue of Granules"]
