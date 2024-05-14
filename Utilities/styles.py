@@ -10,12 +10,12 @@ class Styles:
                 "box-shadow": "0 0 10px rgba(0,0,0,0.5)",
             }
         }
-    
+    #margin: 10px;
     display_card_style = """
                     border: 1px solid #ccc;
                     border-radius: 10px;
+                    margin-bottom: 10px;
                     padding: 10px;
-                    margin: 10px;
                     box-shadow: 5px 5px 5px #888888;
                 """
     header_style = """

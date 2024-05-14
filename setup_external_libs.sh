@@ -27,3 +27,6 @@ aws_secret_access_key = Lo3EfMBeoCx/B8wHbu37Dji7quXjxUZLa710mx6O
 EOF
 
 echo "AWS credentials file was created successfully in $aws_dir directory."
+
+#start the web application
+streamlit run /Homepage.py

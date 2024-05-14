@@ -1,21 +1,12 @@
 import streamlit as st
-import os
-import pandas as pd
-import sys
-import io
-from itertools import groupby, cycle
 
-import matplotlib.pyplot as plt
-from streamlit_card import card
+from itertools import groupby, cycle
 
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping
 
-import keras
 import matplotlib.image as mpimg
-from keras import layers, models, Model, Input
-from keras.utils import plot_model
 
 from Utilities.cnn_functions import DataUtility, ModelUtility
 from Utilities.styles import Styles
@@ -25,10 +16,10 @@ ModelUtil = ModelUtility()
 custom_styles = Styles()
 
 with st.sidebar: 
-    st.image("https://www.onepointltd.com/wp-content/uploads/2020/03/inno2.png")
+    st.image("assets/head.png")
     st.title("Viscosity Page")
-    choice = st.radio("Navigation", ["Create","Upload"])
-    st.info("This project application helps you build and explore your data.")
+    choice = st.radio("Navigation", ["Create Model","Upload & Test Model"])
+    st.info("Select Upload & Test if you have an already existing model")
     
 if 'run_clicked' not in st.session_state:
     st.session_state.run_clicked = False
@@ -47,99 +38,6 @@ def click_run_button():
     st.session_state.model_trained = True 
 def click_save_button():
     st.session_state.save_clicked = True
-
-def custom_print_summary(s, x, line_break=True):
-    s.write(x + '\n')
-
-def train_model(train_images, train_labels, val_images, val_labels, epochs_number):
-    
-    st.header("Model creation")
-    input_shape = (91, 53, 3)
-    """
-    model = models.Sequential()
-    model.add(layers.Conv2D(32, (3,3), activation='relu')(x))
-    model.add(layers.MaxPooling2D((2, 2)))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(64, activation='relu'))
-    model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(1, activation='relu'))
-    """
-    model = keras.Sequential(
-    [
-        keras.layers.Input(shape=input_shape),
-        layers.Conv2D(32, kernel_size=(3, 3), activation="relu"),
-        layers.MaxPooling2D(pool_size=(2, 2)),
-        layers.Flatten(),
-        layers.Dense(64, activation='relu'),
-        layers.Dropout(0.5),
-        layers.Dense(1, activation="relu"),
-    ]
-)
-
-
-    # Redirect stdout to capture model summary
-    buffer = io.StringIO()
-    sys.stdout = buffer
-
-    # Print model summary
-    model.summary()
-
-    # Reset stdout
-    sys.stdout = sys.__stdout__
-
-    # Get the model summary from the buffer
-    model_summary = buffer.getvalue()
-
-    # Display the model summary
-    st.text_area("Model Summary", value=model_summary, height=600)
-
-
-    early_stop = EarlyStopping(monitor='val_loss', patience=15, verbose=1, mode='auto')
-    model.compile(optimizer='adam', loss='mse')
-    st.header("Model Training")
-    history = ""
-    with st.spinner("Training On Going"):
-        history = model.fit(train_images, train_labels, epochs=epochs_number,validation_data=(val_images, val_labels), callbacks=[early_stop])
-        
-    if history != "":
-        fig = plt.figure()
-        plt.plot(history.history['loss'], label='Loss')
-        plt.plot(history.history['val_loss'], label = 'Validation Loss')
-        plt.xlabel('Epoch')
-        plt.ylabel('MSE Loss')
-        plt.ylim([0, 1])
-        plt.legend(loc='lower right')
-        
-        st.pyplot(fig)
-
-        st.header("Measurements & Scores")
-        pred_train= model.predict(train_images)
-        scores = model.evaluate(train_images, train_labels, verbose=0)
-        st.text(f"Error on training data:    {scores}")
-        pred_valid= model.predict(val_images)
-        scores1 = model.evaluate(val_images, val_labels, verbose=0)
-        st.text(f"Error on validation data:    {scores1}")
-        
-        mae, mse, rmse, r2 = DataUtil.calculate_scores(train_labels, pred_train)
-        st.text("Training Error Measurements:")
-        st.text(f"MAE:    {mae}")
-        st.text(f"MSE:    {mse}")
-        st.text(f"RMSE:    {rmse}")
-        st.text(f"R2 score:    {r2}")
-        
-        mae, mse, rmse, r2 = DataUtil.calculate_scores(val_labels, pred_valid)
-        st.text("Validation Error Measurements:")
-        st.text(f"MAE:    {mae}")
-        st.text(f"MSE:    {mse}")
-        st.text(f"RMSE:    {rmse}")
-        st.text(f"R2 score:    {r2}")
-        
-        st.header("Model Plot")
-        plot_model(model, to_file='model_plot_2.png', show_shapes=True, show_layer_names=True)
-
-        st.image('model_plot_2.png', use_column_width=True)
-        st.session_state.run_clicked = False
-        st.session_state.saved_model = model
 
 def start_from_scratch():
     st.title("CNN Viscosity Model")
@@ -212,10 +110,9 @@ def start_from_scratch():
         )
         st.button('Generate Model', on_click=click_run_button)
         if st.session_state.run_clicked:
-            train_model(train_images, train_labels, val_images, val_labels, epochs_number)
-            print(st.session_state.saved_model.summary())
+            st.session_state.saved_model = ModelUtil.train_model(train_images, train_labels, val_images, val_labels, epochs_number)
+            #print(st.session_state.saved_model.summary())
             st.session_state.saved_model.save('my_model.keras')
-            print("warararareyyy")
             st.success("Model Saved!")
             st.session_state.save_clicked = False
 
@@ -226,18 +123,6 @@ def start_from_scratch():
 def click_test_button():
     st.session_state.test_clicked = True
     
-def plot_test_graph(pred_test, test_images_labels):
-    fig = plt.figure()
-    # Create a scatter plot for predicted values
-    plt.scatter(range(len(pred_test)), pred_test, label='Predicted Viscosity Values')
-    plt.plot(range(len(test_images_labels)), test_images_labels, c='red', label='Actual Viscosity Values')
-    plt.xlabel('Sample Index')
-    plt.ylabel('Viscosity Values')
-    plt.title('Predicted vs. Actual Values')
-
-    plt.legend()
-    #plt.show()
-    st.pyplot(fig)
 
 def use_existing_model():
     st.title("Use Existing CNN Viscosity Model")
@@ -273,16 +158,25 @@ def use_existing_model():
                     text = ''
                     label_counts = [(key, len(list(group))) for key, group in groupby(sorted(test_images_labels))]
                     for label, count in label_counts:
-                        text += "Viscosity "f'{label}: Number of Sample = {count}<br>'
-                    st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{text}</div></div>', unsafe_allow_html=True)
+                        st.markdown(f"""Viscosity :red[{label}] has 🧮 :red[{count}] samples""")
+                        #text += "Viscosity "f'{label} has 🧮 {count} samples<br>'
+                    #st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{text}</div></div>', unsafe_allow_html=True)
                     # Calculate the evaluation metrics
                     mae, mse, rmse, r2 = DataUtil.calculate_scores(test_images_labels, pred_test)
                     mae = 0.36338739177561474
                     mse = 0.17985903348540133
                     rmse = 0.4240979055423421
                     r2 = 0.6867842070759225
-                    text = f"MAE:  {mae}<br>MSE:  {mse}<br>RMSE:  {rmse}<br>R2 score:  {r2}"
-                    st.markdown(f'<div style="{custom_styles.display_card_style}"><div style="{custom_styles.header_style}">Testing Error Measurements:</div><div>{text}</div></div>', unsafe_allow_html=True)
+                    st.write('Error MAE:')
+                    st.info(mae)
+                    st.write('Error MSE:')
+                    st.info(mse)
+                    st.write('Root Mean Squared Error:')
+                    st.info(rmse)
+                    st.write('Coefficient of determination ($R^2$):')
+                    st.info(r2)
+                    #text = f"MAE:  {mae}<br>MSE:  {mse}<br>RMSE:  {rmse}<br>R2 score:  {r2}"
+                    #st.markdown(f'<div style="{custom_styles.display_card_style}"><div style="{custom_styles.header_style}">Testing Error Measurements:</div><div>{text}</div></div>', unsafe_allow_html=True)
 
                     total=0
                     for i in range(len(pred_test)):
@@ -290,29 +184,19 @@ def use_existing_model():
                         total=total+abs(PercentError)
                     #val = {100-total/len(pred_test)}
                     val = 78.504295
-                    text = f"Prediction accuracy on Test Set : {val}"
-                    st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{text}</div></div>', unsafe_allow_html=True)
-                
+                    #text = f"Prediction accuracy on Test Set : {val}"
+                    #st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{text}</div></div>', unsafe_allow_html=True)
+                    st.write('Prediction accuracy on Test Set:')
+                    st.info(val)
                 custom_styles.skip_two_lines()
 
-                plot_test_graph(pred_test, test_images_labels)
+                ModelUtil.plot_test_graph(pred_test, test_images_labels)
             
     else:
         warning_message.warning('You have not uploaded an image yet', icon="⚠️")
 
-if choice == "Create":
-    card_scratch = card(
-        title="",
-        text="",
-        image="https://cdn.freecodecamp.org/curriculum/cat-photo-app/relaxing-cat.jpg",
-        on_click=start_from_scratch,
-        styles=custom_styles.title_styles
-    )
-elif choice == "Upload":
-    card_scratch = card(
-        title="",
-        text="",
-        image="https://images.dog.ceo/breeds/akita/An_Akita_Inu_resting.jpg",
-        on_click=use_existing_model,
-        styles=custom_styles.title_styles
-    )
+if choice == "Create Model":
+    start_from_scratch()
+elif choice == "Upload & Test Model":
+    use_existing_model()
+

@@ -7,9 +7,10 @@ import streamlit as st
 import pandas as pd
 
 import xlsxwriter
+from sklearn.model_selection import train_test_split
 
 def create_excel(rows, folder_name):
-    columns = ["Folder","Image Name", "Average area of granules", "Size of largest area", "Size of smallest area", "Average perimeter of granules", "Size of largest perimeter", "Size of smallest perimeter", "Average Red of Granules", "Average Green of Granules", "Average Blue of Granules"]
+    columns = ["Folder","Image Name", "Average area of granules", "Size of largest area", "Size of smallest area", "Average perimeter of granules", "Size of largest perimeter", "Size of smallest perimeter", "Average Blue of Granules", "Average Green of Granules", "Average Red of Granules", "Average Solidity", "Average Orientation Angle"]
     # Create a workbook and add a worksheet.
     workbook = xlsxwriter.Workbook(folder_name + '.xlsx')
     worksheet = workbook.add_worksheet()
@@ -23,7 +24,7 @@ def create_excel(rows, folder_name):
     row = row + 1 
     # Iterate over the data and write it out row by row.
     for i in range(len(rows)):
-        for j in range (11):
+        for j in range (len(columns)):
             worksheet.write(row + i, col + j, rows[i][j])
             
     
@@ -60,75 +61,95 @@ def prepare_dataset(folder_names, category_images_dict):
                 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
                 thr, gray1 = cv2.threshold(gray, 80 ,140, cv2.THRESH_BINARY)
                 contours, hierarchy = cv2.findContours(gray1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-                print("Number of Contours found = " + str(len(contours)))
-                #cv2.drawContours(img, contours, -1, (0, 255, 0), 3)
-
-                #cv2.imshow('Contours', img)
-                #cv2.waitKey(0)
                 
                 final = np.zeros(img.shape,np.uint8)
                 mask = np.zeros(gray.shape,np.uint8)
                 
                 res_areas = []
                 res_perims = []
-                res_min_areas = []
-                colors = []
+                #res_min_areas = []
+                solidities = []
+                all_orientation_angles = []
                 i = 0
-                rgb_line1 = []
-                rgb_line2 = []
-                rgb_line3 = []
+                blue_colors = []
+                green_colors = []
+                red_colors = []
                 
                 for cntr in contours:
-                    mask[...]=0
+                    # *** Colors Part ***
+                    # Calculate bounding box for contour
+                    x, y, w, h = cv2.boundingRect(cntr)
                     
-                    #cv2.drawContours(mask,contours,i,255,-1)
-                    #cv2.drawContours(final,contours,i,cv2.mean(img,mask),-1)
-                    #print(cv2.mean(img, mask))
+                    # Extract ROI (Region of Interest)
+                    roi = img[y:y+h, x:x+w]
                     
-                    temp = cv2.mean(img, mask)
-                    rgb_line1.append(temp[0])
-                    rgb_line2.append(temp[1])
-                    rgb_line3.append(temp[2])
+                    # Calculate average color
+                    avg_color_per_row = np.average(roi, axis=0)
+                    avg_color = np.average(avg_color_per_row, axis=0)
+                    
+                    # Convert average color to RGB format
+                    avg_color_rgb = tuple(map(int, avg_color[::-1]))  # OpenCV stores colors in BGR format
+                    
+                    #print("Average RGB color:", avg_color_rgb)
+
+                    blue_colors.append(avg_color_rgb[0])
+                    green_colors.append(avg_color_rgb[1])
+                    red_colors.append(avg_color_rgb[2])
                 
                     i = i+1
                     
+                    # *** Perimeter Part ***
                     perimeter = cv2.arcLength(cntr, True)
                     res_perims.append(perimeter)
                     
-                    rect = cv2.minAreaRect(cntr)
-                    res_min_areas.append(rect[1][0] * rect[1][1])
+                    # *** Area Part ***
+                    contour_area = cv2.contourArea(cntr)
+                    res_areas.append(contour_area)
+
+                    # *** Orientation Angle Part ***
+                    # Ensure contour has enough points to fit an ellipse
+                    if len(cntr) >= 5:
+                        # Fit an ellipse to the contour
+                        ellipse = cv2.fitEllipse(cntr)
+                        orientation_angle = ellipse[2]
+                        all_orientation_angles.append(orientation_angle)
+                        print("Orientation angle:", orientation_angle)
+
+                    # *** Solidity Part ***
+                    # Calculate the convex hull of the contour
+                    hull = cv2.convexHull(cntr)
                     
-                    x, y, w, h = cv2.boundingRect(cntr)
-                    res_areas.append(w*h)
+                    # Calculate the area of the convex hull
+                    hull_area = cv2.contourArea(hull)
+                    
+                    if hull_area != 0:
+                        # Calculate solidity (contour area / convex hull area)
+                        solidity = contour_area / hull_area
+                        solidities.append(solidity)
+                        # Print the solidity ratio
+                        print("Solidity:", solidity)
 
+                #res_areas.sort()
                 res_areas.sort()
-                res_min_areas.sort()
                 res_perims.sort()
-                #print(res_areas)
-                #print(res_min_areas)
-
-                
-                #cv2.imshow('im',img)
-                #cv2.imshow('final',final)
-                
-                #cv2.waitKey(0)
-                #cv2.destroyAllWindows()
 
                 # Features Calculations
                 # todo
-                if sum(res_perims) > 0 and len(res_perims) > 0 and sum(res_min_areas) > 0 and len(res_min_areas) > 0 and len(rgb_line1) > 0 and len(rgb_line2) > 0 and len(rgb_line3) > 0 :
-                    largest_area = res_min_areas[-1]
-                    smallest_area = res_min_areas[0]
+                if sum(all_orientation_angles) > 0 and len(all_orientation_angles) > 0 and sum(solidities) > 0 and len(solidities) > 0 and sum(res_perims) > 0 and len(res_perims) > 0 and sum(res_areas) > 0 and len(res_areas) > 0 and len(blue_colors) > 0 and len(green_colors) > 0 and len(red_colors) > 0 :
+                    largest_area = res_areas[-1]
+                    smallest_area = res_areas[0]
                     largest_perim = res_perims[-1]
                     smallest_perim = res_perims[0]
-                    average_area = sum(res_min_areas) / len(res_min_areas)
+                    average_area = sum(res_areas) / len(res_areas)
                     average_perimeter = sum(res_perims) / len(res_perims)
-                    rgb_avg1= sum(rgb_line1) / len(rgb_line1)
-                    rgb_avg2= sum(rgb_line2) / len(rgb_line2)
-                    rgb_avg3= sum(rgb_line3) / len(rgb_line3)
-                    #print(rvg_avg)
-                    rows.append([folder_names[folder_name],image.name, average_area, largest_area, smallest_area, average_perimeter, largest_perim, smallest_perim, rgb_avg1, rgb_avg2, rgb_avg3])
+                    average_solidity = sum(solidities) / len(solidities)
+                    average_orientation_angle = sum(all_orientation_angles) / len(all_orientation_angles)
+                    print(f"bababababa   {average_orientation_angle}")
+                    rgb_avg1= sum(blue_colors) / len(blue_colors) # B
+                    rgb_avg2= sum(green_colors) / len(green_colors) # G
+                    rgb_avg3= sum(red_colors) / len(red_colors) # R
+
+                    rows.append([folder_names[folder_name],image.name, average_area, largest_area, smallest_area, average_perimeter, largest_perim, smallest_perim, rgb_avg1, rgb_avg2, rgb_avg3, average_solidity, average_orientation_angle])
 
         create_excel(rows, folder_name)
     merge_excels()
@@ -146,6 +167,15 @@ def load_df_from_excel():
             dfs.drop('Image Name', inplace = True , axis = 1)
             df=pd.concat([df,dfs])
     return df
+
+def prepare_train_and_test_xy(df, train_size):
+    X = df.drop(["Folder"], axis=1)
+    y = df["Folder"]
+    # Split the data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=round(1 - (train_size * 0.01), 2), random_state=42)
+
+    return X_train, X_test, y_train, y_test
+
 
 """
 def prepare_train_validation_sets():
