@@ -29,6 +29,7 @@ EOF
 echo "AWS credentials file was created successfully in $aws_dir directory."
 
 #start the web application
+git config --global user.email "chrefmekni2@gmail.com"
 git commit --allow-empty -m "Start building"
 git push origin main
 streamlit run /index.py
