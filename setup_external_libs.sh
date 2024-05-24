@@ -10,7 +10,7 @@ sudo apt-get update
 sudo apt install python3-pip
 sudo apt install graphviz
 sudo apt-get install ffmpeg libsm6 libxext6  -y
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 echo "All requirements are installed."
 
 ###setup AWS configuration
