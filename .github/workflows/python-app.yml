@@ -36,7 +36,8 @@ jobs:
     - name: Test with pytest
       run: |
         cd Testing
-        pytest my_tests.py --browser=chrome --html=report.html
+        mkdir -p reports
+        pytest my_tests.py --browser=chrome --html=reports/report.html
         chmod 777 report.html
     - name: Set output
       if: success() || failure()
