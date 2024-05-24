@@ -19,3 +19,4 @@ st-pages
 pytest
 pytest-html
 flake8
+webdriver_manager
