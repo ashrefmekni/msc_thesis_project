@@ -16,3 +16,6 @@ pydot
 openpyxl
 selenium
 st-pages
+pytest
+pytest-html
+flake8
