@@ -29,4 +29,5 @@ EOF
 echo "AWS credentials file was created successfully in $aws_dir directory."
 
 #start the web application
-streamlit run /Homepage.py
+git pull
+streamlit run /index.py
