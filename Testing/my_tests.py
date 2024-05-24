@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 
 class TestLoginPage:
     def test_valid_login(self, driver):
-        driver.get("http://localhost:8501")  # Change to your Streamlit app URL
+        driver.get("http://18.215.174.46/:8501")  # Change to your Streamlit app URL
         driver.maximize_window()
 
         # Allow some time for the page to load
