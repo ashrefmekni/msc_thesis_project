@@ -1,5 +1,5 @@
-from operator import index
 import streamlit as st
+from st_pages import hide_pages
 import pandas as pd
 from streamlit_pandas_profiling import st_profile_report
 import pickle
@@ -10,11 +10,14 @@ import matplotlib.pyplot as plt
 from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 
 from Utilities.styles import Styles
 from Utilities.ann_functions import prepare_train_and_test_xy, display_metrics
+
+hide_pages(
+    ["index"]
+)
 
 custom_styles = Styles()
 if 'dataframe' not in st.session_state:

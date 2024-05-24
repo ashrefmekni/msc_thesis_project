@@ -1,4 +1,5 @@
 import streamlit as st
+from st_pages import hide_pages
 
 from itertools import groupby, cycle
 
@@ -9,6 +10,10 @@ import matplotlib.image as mpimg
 
 from Utilities.cnn_functions import DataUtility, ModelUtility
 from Utilities.styles import Styles
+
+hide_pages(
+    ["index"]
+)
 
 DataUtil = DataUtility()
 ModelUtil = ModelUtility()
