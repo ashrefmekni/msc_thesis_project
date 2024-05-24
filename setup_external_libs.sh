@@ -29,5 +29,6 @@ EOF
 echo "AWS credentials file was created successfully in $aws_dir directory."
 
 #start the web application
-git pull
+git commit --allow-empty -m "Start building"
+git push origin main
 streamlit run /index.py
