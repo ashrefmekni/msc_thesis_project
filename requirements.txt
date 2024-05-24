@@ -15,3 +15,4 @@ plotly
 pydot
 openpyxl
 selenium
+st-pages
