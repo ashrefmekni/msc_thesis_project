@@ -4,7 +4,6 @@ from itertools import groupby, cycle
 
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from keras.callbacks import EarlyStopping
 
 import matplotlib.image as mpimg
 
@@ -48,8 +47,17 @@ def start_from_scratch():
     warning_message = st.empty()
     if pictures:
         warning_message.empty()
+        # Split the data into features (X) and labels (y)
+        train_size = st.slider('Data split ratio (% for Training Set)', 10, 90, 80, 5)
+        st.write(f"Training Size:")
+        st.info(str(train_size) + "%")
+        st.write(f"Validation Size:")
+        st.info(str(100 - train_size) + "%")
+        st.text("")
+        validation_size = round(1 - (train_size * 0.01), 2)
+        #if st.button('Start Modelling'):
         # Split into training and validation sets
-        training_files, validation_files = train_test_split(picture_names, test_size=0.2, random_state=42)  
+        training_files, validation_files = train_test_split(picture_names, test_size=validation_size, random_state=42)  
         #Data size for training
         train_images = []
         train_labels = []
@@ -105,7 +113,7 @@ def start_from_scratch():
             "Set the number of epochs",
             min_value=10,
             max_value=200,
-            value=10,
+            value=100,
             step=10
         )
         st.button('Generate Model', on_click=click_run_button)
@@ -114,7 +122,7 @@ def start_from_scratch():
             #print(st.session_state.saved_model.summary())
             st.session_state.saved_model.save('my_model.keras')
             st.success("Model Saved!")
-            st.session_state.save_clicked = False
+            st.session_state.save_clicked = False   
 
 
     else:
@@ -146,10 +154,13 @@ def use_existing_model():
                 testimages.append(mpimg.imread(related_pic))
                 test_images_labels.append(DataUtil.ratios_to_categories(int(testratio)))
             #st.write(test_images_labels)
+            from itertools import groupby
+            print([len(list(group)) for key, group in groupby(sorted(test_images_labels))])
             st.button('Test Model', on_click=click_test_button)
             if st.session_state.test_clicked:
                 # Normalize pixel values between 0 and 1
                 testimages = DataUtil.convert_test_imgs(testimages)
+                #DataUtil.unique(test_images_labels)
                 pred_test= model.predict(testimages)
                 error_card = st.container()
                 
@@ -163,10 +174,10 @@ def use_existing_model():
                     #st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{text}</div></div>', unsafe_allow_html=True)
                     # Calculate the evaluation metrics
                     mae, mse, rmse, r2 = DataUtil.calculate_scores(test_images_labels, pred_test)
-                    mae = 0.36338739177561474
-                    mse = 0.17985903348540133
-                    rmse = 0.4240979055423421
-                    r2 = 0.6867842070759225
+                    #mae = 0.36338739177561474
+                    #mse = 0.17985903348540133
+                    #rmse = 0.4240979055423421
+                    #r2 = 0.6867842070759225
                     st.write('Error MAE:')
                     st.info(mae)
                     st.write('Error MSE:')
@@ -182,8 +193,8 @@ def use_existing_model():
                     for i in range(len(pred_test)):
                         PercentError= (test_images_labels[i]-pred_test[i])/(test_images_labels[i])*100
                         total=total+abs(PercentError)
-                    #val = {100-total/len(pred_test)}
-                    val = 78.504295
+                    val = 100-total/len(pred_test)
+                    #val = 78.504295
                     #text = f"Prediction accuracy on Test Set : {val}"
                     #st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{text}</div></div>', unsafe_allow_html=True)
                     st.write('Prediction accuracy on Test Set:')

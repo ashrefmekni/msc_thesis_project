@@ -176,6 +176,20 @@ def prepare_train_and_test_xy(df, train_size):
 
     return X_train, X_test, y_train, y_test
 
+def display_metrics(report, confusion, sub_header):
+    st.subheader(sub_header)
+    st.text("Classification Report:")
+    st.dataframe(report)
+    st.text("Confusion Matrix:")
+    conf_df = pd.DataFrame(confusion)
+    styled_df = conf_df.style.set_properties(**{
+        "background-color": "white", 
+        "color": "black", 
+        "border-color": "black", 
+        'text-align': 'center'
+    })
+    st.write(styled_df.to_html(), unsafe_allow_html=True)
+    st.write('')
 
 """
 def prepare_train_validation_sets():

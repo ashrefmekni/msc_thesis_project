@@ -59,6 +59,20 @@ class DataUtility:
         
         return mae, mse, rmse, r2
 
+    def unique(self, list1):
+ 
+        # initialize a null list
+        unique_list = []
+    
+        # traverse for all elements
+        for x in list1:
+            # check if exists in unique_list or not
+            if x not in unique_list:
+                unique_list.append(x)
+        # print list
+        for x in unique_list:
+            print (x)
+
 
 class ModelUtility:
 
@@ -146,7 +160,7 @@ class ModelUtility:
             plt.legend(loc='lower right')
             
             st.pyplot(fig)
-
+            """
             st.header("Measurements & Scores")
             pred_train= model.predict(train_images)
             scores = model.evaluate(train_images, train_labels, verbose=0)
@@ -178,7 +192,7 @@ class ModelUtility:
             st.info(rmse)
             st.write('Coefficient of determination ($R^2$):')
             st.info(r2)
-            
+            """
             st.header("Model Plot")
             plot_model(model, to_file='model_plot_2.png', show_shapes=True, show_layer_names=True)
 

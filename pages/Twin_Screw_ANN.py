@@ -2,9 +2,8 @@ from operator import index
 import streamlit as st
 import pandas as pd
 from streamlit_pandas_profiling import st_profile_report
-import os
 import pickle
-from ydata_profiling import ProfileReport
+import joblib
 
 import matplotlib.pyplot as plt
 
@@ -12,22 +11,20 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
 
 from Utilities.styles import Styles
-from Utilities.ann_functions import prepare_train_and_test_xy
+from Utilities.ann_functions import prepare_train_and_test_xy, display_metrics
 
 custom_styles = Styles()
 if 'dataframe' not in st.session_state:
     st.session_state.dataframe = pd.DataFrame()
 
+if 'cleaned_dataframe' not in st.session_state:
+    st.session_state.cleaned_dataframe = False
+
 if 'start_modelling' not in st.session_state:
     st.session_state.start_modelling = False
-if 'mlp_clicked' not in st.session_state:
-    st.session_state.mlp_clicked = False
-if 'decision_clicked' not in st.session_state:
-    st.session_state.decision_clicked = False
-if 'Kneigh_clicked' not in st.session_state:
-    st.session_state.Kneigh_clicked = False
 
 #Save the classifiers
 if 'mlp_classifier' not in st.session_state:
@@ -44,15 +41,10 @@ if 'knn_score' not in st.session_state:
     st.session_state.knn_score = None
 if 'dt_score' not in st.session_state:
     st.session_state.dt_score = None
-    
-def click_decision_button():
-    st.session_state.decision_clicked = True
-def click_kneigh_button():
-    st.session_state.Kneigh_clicked = True
+
+
 def click_start_modelling():
     st.session_state.start_modelling = True
-def click_mlp_button():
-    st.session_state.mlp_clicked = True
 
 def plot_accuracy_graph(mlp_accuracy, dt_accuracy, knn_accuracy):
     # Sample data (replace this with your actual data)
@@ -75,7 +67,7 @@ def plot_accuracy_graph(mlp_accuracy, dt_accuracy, knn_accuracy):
 with st.sidebar: 
     st.image("assets/Tervek2.png")
     st.title("Twin Screw Page")
-    choice = st.radio("Navigation", ["Upload", "Profiling", "Modelling", "Download", "Testing"])
+    choice = st.radio("Navigation", ["Upload", "Profiling", "Modelling", "Download", "Load Existing Model"])
     #st.info("This project application helps you build and explore your data.")
 
 if choice == "Upload":
@@ -83,10 +75,20 @@ if choice == "Upload":
     file = st.file_uploader("Upload Your Dataset")
     if file: 
         st.session_state.dataframe = pd.read_csv(file, index_col=None)
-        st.session_state.dataframe.to_csv('dataset.csv', index=None)
+        #st.session_state.dataframe.to_csv('clean_dataset.csv', index=False)
     
     if not st.session_state.dataframe.empty:
         st.dataframe(st.session_state.dataframe)
+        # Column selection for dropping
+        st.subheader("Clean Dataframe")
+        columns_to_drop = st.multiselect("Select Columns to Drop", st.session_state.dataframe.columns)
+
+        if st.button("Drop Selected Columns"):
+            # Drop selected columns from the DataFrame
+            st.session_state.dataframe = st.session_state.dataframe.drop(columns=columns_to_drop)
+            # Display the updated DataFrame
+            st.dataframe(st.session_state.dataframe)
+            st.session_state.cleaned_dataframe = True
 
 if choice == "Profiling": 
     st.title("Exploratory Data Analysis")
@@ -122,6 +124,25 @@ if choice == "Modelling":
             st.session_state.mlp_score = st.session_state.mlp_classifier.score(X_test, y_test)
             st.session_state.dt_score = st.session_state.dt_classifier.score(X_test, y_test)
             st.session_state.knn_score = st.session_state.knn_classifier.score(X_test, y_test)
+            #
+            # Calculate additional metrics
+            mlp_y_pred = st.session_state.mlp_classifier.predict(X_test)
+            dt_y_pred = st.session_state.dt_classifier.predict(X_test)
+            knn_y_pred = st.session_state.knn_classifier.predict(X_test)
+
+            mlp_report = classification_report(y_test, mlp_y_pred, output_dict=True)
+            dt_report = classification_report(y_test, dt_y_pred, output_dict=True)
+            knn_report = classification_report(y_test, knn_y_pred, output_dict=True)
+
+            mlp_confusion = confusion_matrix(y_test, mlp_y_pred)
+            dt_confusion = confusion_matrix(y_test, dt_y_pred)
+            knn_confusion = confusion_matrix(y_test, knn_y_pred)
+
+            display_metrics(mlp_report, mlp_confusion, "MLP Classifier Metrics")
+
+            display_metrics(dt_report, dt_confusion, "Decision Tree Classifier Metrics")
+
+            display_metrics(knn_report, knn_confusion, "KNeighbors Classifier Metrics")
     
         else:
             st.warning("Please enter a Dataset to train the ANN model")  
@@ -151,76 +172,114 @@ def load_lottieurl(url: str):
         return None
     return r.json()
 
-lottie_url = "https://lottie.host/f2be7250-f072-4a6a-a688-c12357566b00/rco5W5vz9l.json"
+lottie_url_ship = "https://lottie.host/f2be7250-f072-4a6a-a688-c12357566b00/rco5W5vz9l.json"
+lottie_url_robot = "https://lottie.host/778a0be1-4673-4102-8477-05ad740be551/tncwYCu412.json"
+
+def play_animation(animation_url):
+    lottie_json = load_lottieurl(animation_url)
+    st_lottie(lottie_json, height=400)
 
 if choice == "Download":
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.button('Generate MLP Classifier', on_click=click_mlp_button)
-        if st.session_state.mlp_clicked:
-            # save the iris classification model as a pickle file
-            model_pkl_file = "mlp_class.pkl"  
-
+    #st.title("Download a Trained Classifier")
+    st.subheader("Download a Trained Classifier")
+    classifier_type = st.selectbox(
+            'Which classifier would you like to download?',
+            ('MLP-Classifier', 'DTree-Classifier', 'KNN-Classifier'),
+            index=None,
+            placeholder="Select classifier..."
+        )
+    
+    if st.button("Download"):
+        if classifier_type == "MLP-Classifier":
+            model_pkl_file = "mlp_classifier.pkl"
             with open(model_pkl_file, 'wb') as file:  
                 pickle.dump(st.session_state.mlp_classifier, file)
-            message = f"The MLP Classifier has succesfully been generated"
-            st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{message}</div></div>', unsafe_allow_html=True)
-            st.session_state.mlp_clicked = False
-    
-    lottie_json = load_lottieurl(lottie_url)
-    st_lottie(lottie_json, height=300)
-    st.caption("bububububu")
-    
-    
-    with col2:       
-        st.button('Generate DecTree Classifier', on_click=click_decision_button)
-        if st.session_state.decision_clicked:
-            # save the iris classification model as a pickle file
-            model_pkl_file = "decision_class.pkl"  
+            
+            play_animation(lottie_url_robot)
+            st.success("The MLP Classifier has succesfully been downloaded", icon="✅")
 
+        elif classifier_type == "DTree-Classifier":
+            model_pkl_file = "decision_classifier.pkl"  
             with open(model_pkl_file, 'wb') as file:  
                 pickle.dump(st.session_state.dt_classifier, file)
-            message = f"The Descision Tree Classifier has succesfully been generated"
-            st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{message}</div></div>', unsafe_allow_html=True)
-            st.session_state.decision_clicked = False
-    
-    with col3:
-        st.button('Generate KNeigh Classifier', on_click=click_kneigh_button)
-        if st.session_state.Kneigh_clicked == True:
-            # save the iris classification model as a pickle file
-            model_pkl_file = "Kneigh_class.pkl"  
+            st.success("The Descision Tree Classifier has succesfully been downloaded", icon="✅")
+            play_animation(lottie_url_robot)
+
+        elif classifier_type == "KNN-Classifier":
+            model_pkl_file = "Kneigh_classifier.pkl"  
             with open(model_pkl_file, 'wb') as file:  
                 pickle.dump(st.session_state.knn_classifier, file)
-            message = f"The Kneighbors Classifier has succesfully been generated"
-            st.markdown(f'<div style="{custom_styles.display_card_style}"><div>{message}</div></div>', unsafe_allow_html=True)
-            st.session_state.Kneigh_clicked = False
-
-if choice == "Testing":
-    st.title("Model Testing")
+            st.success("The KNN Classifier has succesfully been downloaded", icon="✅")
+            play_animation(lottie_url_robot)
     
+        else:
+            st.warning("Please select a classifier to download", icon="🚨")
+ 
+    #lottie_json_ship = load_lottieurl(lottie_url_ship)
+    #st_lottie(lottie_json_ship, height=400)
+
+    if st.session_state.cleaned_dataframe == True:
+        st.subheader("Download Cleaned Dataframe")
+        if st.button("Download Cleaned Dataframe"):
+            play_animation(lottie_url_ship)
+            st.session_state.dataframe.to_csv('clean_dataset.csv', index=False)
+            st.success("File is successfully downloaded", icon="✅")
+
+if choice == "Load Existing Model":
+    st.title("Model Testing")
+    model = None
     if st.session_state.dataframe.empty:
         st.warning("Please upload a dataset")
     else:
-        X_train, X_test, y_train, y_test = prepare_train_and_test_xy(st.session_state.dataframe)
+        X_train, X_test, y_train, y_test = prepare_train_and_test_xy(st.session_state.dataframe, train_size=80)
+        use_upload_on = st.toggle("Use an Uploaded Classifier")
 
-        # Select model for testing
-        model_option = st.selectbox("Select Model", ["MLP Classifier", "Decision Tree Classifier", "KNeighbors Classifier"])
+        if use_upload_on:
+            st.subheader("Upload a trained classifier")
+            trained_classifier = st.file_uploader("Upload Your Classifier (.pkl file)")
+            if trained_classifier:
+                model = joblib.load(trained_classifier.name)
+                # Evaluate the model
+                accuracy = model.score(X_test, y_test)
+                st.subheader("Accuracy")
+                st.info(accuracy)
+                #st.subheader("Loss")
+                #st.info(loss)
+                # Calculate additional metrics
+                model_prediction = model.predict(X_test)
 
-        if model_option == "MLP Classifier" and st.session_state.mlp_classifier is not None:
-            model = st.session_state.mlp_classifier
-        elif model_option == "Decision Tree Classifier" and st.session_state.dt_classifier is not None:
-            model = st.session_state.dt_classifier
-        elif model_option == "KNeighbors Classifier" and st.session_state.knn_classifier is not None:
-            model = st.session_state.knn_classifier
+                model_report = classification_report(y_test, model_prediction, output_dict=True)
+
+                model_confusion = confusion_matrix(y_test, model_prediction)
+
+                display_metrics(model_report, model_confusion, trained_classifier.name)
+
         else:
-            st.warning("Please train the selected model before testing.")
-            st.stop()
+            # Select model for testing
+            model_option = st.selectbox("Select Model", ["MLP Classifier", "Decision Tree Classifier", "KNeighbors Classifier"])
 
-        # Evaluate the model
-        accuracy = model.score(X_test, y_test)
+            if model_option == "MLP Classifier" and st.session_state.mlp_classifier is not None:
+                model = st.session_state.mlp_classifier
+            elif model_option == "Decision Tree Classifier" and st.session_state.dt_classifier is not None:
+                model = st.session_state.dt_classifier
+            elif model_option == "KNeighbors Classifier" and st.session_state.knn_classifier is not None:
+                model = st.session_state.knn_classifier
+            else:
+                st.warning("Please train the selected model before testing.")
+                st.stop()
 
-        # Display the evaluation results
-        st.subheader("Testing Accuracy")
-        #st.write("Testing Accuracy:")
-        st.info(accuracy)
-        
+            # Evaluate the model
+            accuracy = model.evaluate(X_test, y_test)
+            st.subheader("Accuracy")
+            st.info(accuracy)
+
+            model_prediction = model.predict(X_test)
+
+            model_report = classification_report(y_test, model_prediction, output_dict=True)
+
+            model_confusion = confusion_matrix(y_test, model_prediction)
+
+            display_metrics(model_report, model_confusion, model_option)
+
+
+    
