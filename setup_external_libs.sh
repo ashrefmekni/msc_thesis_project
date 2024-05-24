@@ -6,13 +6,6 @@ chmod 755 requirements.txt
 sudo apt update
 sudo apt-get update 
 
-### Install necessary packages
-sudo apt install python3-pip
-sudo apt install graphviz
-sudo apt-get install ffmpeg libsm6 libxext6  -y
-python3 -m pip install -r requirements.txt
-echo "All requirements are installed."
-
 ###setup AWS configuration
 aws_dir="$HOME/.aws"
 credentials_file="$aws_dir/credentials"
@@ -27,6 +20,17 @@ aws_secret_access_key = Lo3EfMBeoCx/B8wHbu37Dji7quXjxUZLa710mx6O
 EOF
 
 echo "AWS credentials file was created successfully in $aws_dir directory."
+
+### Install necessary packages
+sudo apt install python3-pip
+sudo apt install graphviz
+sudo apt-get install ffmpeg libsm6 libxext6  -y
+
+python3 -m venv myenv
+source myenv/bin/activate  
+python3 -m pip install -r requirements.txt
+echo "All requirements are installed."
+
 
 #start the web application
 git commit --allow-empty -m "Start building"
